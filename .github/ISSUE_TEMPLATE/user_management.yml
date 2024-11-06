@@ -1,0 +1,56 @@
+name: User Management Request
+description: Request for user onboarding or offboarding
+title: "[User Management]: "
+labels: ["user-management"]
+assignees:
+  - octo-team
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for submitting a user management request. Please fill out the information below.
+
+  - type: dropdown
+    id: command
+    attributes:
+      label: Command
+      description: Select the operation to perform
+      options:
+        - /onboard-csv
+        - /offboard
+    validations:
+      required: true
+
+  - type: input
+    id: github_username
+    attributes:
+      label: GitHub Username
+      description: The GitHub username of the user (for offboarding)
+      placeholder: ex. octocat
+    validations:
+      required: false
+
+  - type: input
+    id: org_name
+    attributes:
+      label: Organization Name
+      description: The name of the GitHub organization
+      placeholder: ex. my-org
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional_info
+    attributes:
+      label: Additional Information
+      description: Any additional information or context for this request
+      placeholder: Ex. This user needs access to these specific resources...
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our [Code of Conduct](https://example.com/coc)
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true

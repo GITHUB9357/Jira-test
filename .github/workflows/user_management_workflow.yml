@@ -1,0 +1,65 @@
+name: User Onboarding/Offboarding
+
+on:
+  issues:
+    types: [opened, edited, closed]
+  issue_comment:
+    types: [created]
+
+jobs:
+  process_request:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install PyGithub jira pandas
+      
+      - name: Parse Issue
+        id: parse_issue
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issueBody = context.payload.issue.body;
+            const parsedCommand = issueBody.match(/### Command\s+(?<command>\S+)/);
+            if (parsedCommand) {
+              core.setOutput('command', parsedCommand.groups.command.trim());
+            }
+      
+      - name: Process Onboarding
+        if: steps.parse_issue.outputs.command == '/onboard-csv'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JIRA_SERVER: ${{ secrets.JIRA_SERVER }}
+          JIRA_USER: ${{ secrets.JIRA_USER }}
+          JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
+        run: python scripts/onboard_users_from_csv.py
+      
+      - name: Process Offboarding
+        if: steps.parse_issue.outputs.command == '/offboard'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JIRA_SERVER: ${{ secrets.JIRA_SERVER }}
+          JIRA_USER: ${{ secrets.JIRA_USER }}
+          JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
+        run: python scripts/offboard_user.py
+
+      - name: Check Approval
+        if: steps.parse_issue.outputs.command == '/approve'
+        uses: joshjohanning/approveops@v2
+        id: check-approval
+        with:
+          approve-command: '/approve'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          approval-team: 'hr-approvers'
+
+      - name: Update Jira
+        if: steps.check-approval.outputs.approved == 'true'
+        run: python scripts/update_jira.py
