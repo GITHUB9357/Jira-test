@@ -20,7 +20,6 @@ def create_jira_ticket(jira_client, summary, description):
     return new_issue.key
 
 def main():
-    # Get Jira configuration from environment variables
     jira_url = os.environ.get('JIRA_SERVER')
     jira_user = os.environ.get('JIRA_USER')
     jira_api_token = os.environ.get('JIRA_TOKEN')
@@ -35,8 +34,14 @@ def main():
         github_client = Github(github_token)
         logger.info("Successfully connected to Jira and GitHub")
 
-        # Read the CSV file
-        df = pd.read_csv('users_to_onboard.csv')
+        try:
+            df = pd.read_csv('users_to_onboard.csv')
+        except FileNotFoundError:
+            logger.error("users_to_onboard.csv file not found")
+            return
+        except pd.errors.EmptyDataError:
+            logger.error("users_to_onboard.csv is empty")
+            return
 
         for index, row in df.iterrows():
             username = row['username']
@@ -45,17 +50,16 @@ def main():
             org_name = row['org_name']
             repos = row['repos'].split(';')
 
+            logger.info(f"Processing user: {username}")
+
             try:
-                # Add user to organization
                 add_user_to_org(github_client, github_username, org_name)
                 logger.info(f"Added {github_username} to organization {org_name}")
 
-                # Add user to repositories
                 for repo in repos:
                     add_user_to_repo(github_client, github_username, f"{org_name}/{repo}")
                     logger.info(f"Added {github_username} to repository {org_name}/{repo}")
 
-                # Create Jira ticket
                 summary = f"Onboard user: {username}"
                 description = f"Onboarding process for {username} ({email}) to GitHub organization {org_name} and repositories: {', '.join(repos)}"
                 jira_ticket = create_jira_ticket(jira_client, summary, description)
@@ -63,11 +67,10 @@ def main():
                 logger.info(f"Successfully onboarded {username} (Jira ticket: {jira_ticket})")
 
             except Exception as e:
-                logger.error(f"Error onboarding {username}: {str(e)}")
+                logger.error(f"Error onboarding {username}: {str(e)}", exc_info=True)
 
     except Exception as e:
-        logger.error(f"Error in main process: {str(e)}")
-        raise
+        logger.error(f"Error in main process: {str(e)}", exc_info=True)
 
 if __name__ == "__main__":
     main()
