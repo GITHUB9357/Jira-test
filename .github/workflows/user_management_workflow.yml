@@ -36,25 +36,8 @@ jobs:
       - name: Process Onboarding
         if: steps.parse_issue.outputs.command == '/onboard-csv'
         env:
+          GITHUB_PAT: ${{ secrets.TOKEN }}
           JIRA_SERVER: ${{ secrets.JIRA_SERVER }}
           JIRA_USER: ${{ secrets.JIRA_USER }}
           JIRA_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python scripts/onboard_users_from_csv.py
-      
-      - name: Process Offboarding
-        if: steps.parse_issue.outputs.command == '/offboard'
-        env:
-          JIRA_SERVER: ${{ secrets.JIRA_SERVER }}
-          JIRA_USER: ${{ secrets.JIRA_USER }}
-          JIRA_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python scripts/offboard_user.py
-
-      - name: Update Jira
-        if: steps.parse_issue.outputs.command == '/approve'
-        env:
-          JIRA_SERVER: ${{ secrets.JIRA_SERVER }}
-          JIRA_USER: ${{ secrets.JIRA_USER }}
-          JIRA_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
-        run: python scripts/update_jira.py

@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-from github import Github, GithubException
+from github import Github
 from jira import JIRA
 import logging
 
@@ -13,7 +13,7 @@ def add_user_to_org(github_client, username, org_name):
         user = github_client.get_user(username)
         org.invite_user(user)
         logger.info(f"Invited {username} to organization {org_name}")
-    except GithubException as e:
+    except Exception as e:
         logger.error(f"Failed to invite {username} to organization {org_name}: {str(e)}")
         raise
 
@@ -22,7 +22,7 @@ def add_user_to_repo(github_client, username, repo_name):
         repo = github_client.get_repo(repo_name)
         repo.add_to_collaborators(username, permission='push')
         logger.info(f"Added {username} to repository {repo_name}")
-    except GithubException as e:
+    except Exception as e:
         logger.error(f"Failed to add {username} to repository {repo_name}: {str(e)}")
         raise
 
@@ -35,19 +35,19 @@ def create_jira_ticket(jira_client, summary, description):
         raise
 
 def main():
+    github_pat = os.environ.get('GITHUB_PAT')
     jira_url = os.environ.get('JIRA_SERVER')
     jira_user = os.environ.get('JIRA_USER')
     jira_api_token = os.environ.get('JIRA_TOKEN')
-    github_token = os.environ.get('GITHUB_TOKEN')
 
-    if not all([jira_url, jira_user, jira_api_token, github_token]):
-        logger.error("Missing configuration. Please set JIRA_SERVER, JIRA_USER, JIRA_TOKEN, and GITHUB_TOKEN environment variables.")
+    if not all([github_pat, jira_url, jira_user, jira_api_token]):
+        logger.error("Missing configuration. Please set GITHUB_PAT, JIRA_SERVER, JIRA_USER, and JIRA_TOKEN environment variables.")
         return
 
     try:
+        github_client = Github(github_pat)
         jira_client = JIRA(server=jira_url, basic_auth=(jira_user, jira_api_token))
-        github_client = Github(github_token)
-        logger.info("Successfully connected to Jira and GitHub")
+        logger.info("Successfully connected to GitHub and Jira")
 
         df = pd.read_csv('users_to_onboard.csv')
 

@@ -1,56 +1,43 @@
-name: User Management Request
-description: Request for user onboarding or offboarding
-title: "[User Management]: "
-labels: ["user-management"]
-assignees:
-  - octo-team
-body:
-  - type: markdown
-    attributes:
-      value: |
-        Thanks for submitting a user management request. Please fill out the information below.
+name: User Onboarding/Offboarding
 
-  - type: dropdown
-    id: command
-    attributes:
-      label: Command
-      description: Select the operation to perform
-      options:
-        - /onboard-csv
-        - /offboard
-    validations:
-      required: true
+on:
+  issues:
+    types: [opened, edited, closed]
+  issue_comment:
+    types: [created]
 
-  - type: input
-    id: github_username
-    attributes:
-      label: GitHub Username
-      description: The GitHub username of the user (for offboarding)
-      placeholder: ex. octocat
-    validations:
-      required: false
-
-  - type: input
-    id: org_name
-    attributes:
-      label: Organization Name
-      description: The name of the GitHub organization
-      placeholder: ex. my-org
-    validations:
-      required: true
-
-  - type: textarea
-    id: additional_info
-    attributes:
-      label: Additional Information
-      description: Any additional information or context for this request
-      placeholder: Ex. This user needs access to these specific resources...
-
-  - type: checkboxes
-    id: terms
-    attributes:
-      label: Code of Conduct
-      description: By submitting this issue, you agree to follow our [Code of Conduct](https://example.com/coc)
-      options:
-        - label: I agree to follow this project's Code of Conduct
-          required: true
+jobs:
+  process_request:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install PyGithub jira pandas
+      
+      - name: Parse Issue
+        id: parse_issue
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issueBody = context.payload.issue.body;
+            const parsedCommand = issueBody.match(/### Command\s+(?<command>\S+)/);
+            if (parsedCommand) {
+              core.setOutput('command', parsedCommand.groups.command.trim());
+            }
+      
+      - name: Process Onboarding
+        if: steps.parse_issue.outputs.command == '/onboard-csv'
+        env:
+          GITHUB_PAT: ${{ secrets.TOKEN }}
+          JIRA_SERVER: ${{ secrets.JIRA_SERVER }}
+          JIRA_USER: ${{ secrets.JIRA_USER }}
+          JIRA_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+        run: python scripts/onboard_users_from_csv.py
