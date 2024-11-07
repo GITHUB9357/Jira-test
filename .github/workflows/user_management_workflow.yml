@@ -36,7 +36,7 @@ jobs:
       - name: Process Onboarding
         if: steps.parse_issue.outputs.command == '/onboard-csv'
         env:
-          GITHUB_PAT: ${{ secrets.TOKEN }}
+          GITHUB_PAT: ${{ secrets.ADMIN_PAT }}
           JIRA_SERVER: ${{ secrets.JIRA_SERVER }}
           JIRA_USER: ${{ secrets.JIRA_USER }}
           JIRA_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
